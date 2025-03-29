@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>staff-threadedconsole</PackageId>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>ThreadedConsole</Title>
+    <Authors>Will Stafford</Authors>
+    <Product>ThreadedConsole</Product>
+    <Description>Provides a write-only drop in replacement for Console that handles multiple threads writing output concurrently called ThreadedConsole. </Description>
+    <Copyright>Copyright 2025 Will Stafford. All rights reserved.</Copyright>
+  </PropertyGroup>
+
+</Project>
