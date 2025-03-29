@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageId>staff-threadedconsole</PackageId>
+    <PackageId>StaffConsole.ThreadedConsole</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>ThreadedConsole</Title>
     <Authors>Will Stafford</Authors>
@@ -16,9 +16,14 @@
     <RepositoryUrl>https://github.com/Wrsford/ThreadedConsole</RepositoryUrl>
     <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Command line</PackageTags>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
