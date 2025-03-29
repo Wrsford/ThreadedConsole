@@ -11,6 +11,18 @@
     <Product>ThreadedConsole</Product>
     <Description>Provides a write-only drop in replacement for Console that handles multiple threads writing output concurrently called ThreadedConsole. </Description>
     <Copyright>Copyright 2025 Will Stafford. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/Wrsford/ThreadedConsole</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Wrsford/ThreadedConsole</RepositoryUrl>
+    <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Command line</PackageTags>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
