@@ -149,19 +149,20 @@ namespace StaffConsole
 
                 // Add a return after each thread to avoid overlapping logs (unless the log ends with a return)
                 bool needsReturn = true;
+                bool isAtStart = true;
 
                 // Thanks for this while-loop copilot
                 while (logQueue.TryDequeue(out ConsoleLogEntry logEntry))
                 {
 
                     string log = logEntry.Log;
-                    
+                    isAtStart = Console.CursorLeft == 0 || log.StartsWith("\r");
                     // Restore the original colors after writing the log
                     var oldColor = Console.ForegroundColor;
                     var oldBgColor = Console.BackgroundColor;
                     
                     // Thread ID
-                    if (ShowThreadIds)
+                    if (ShowThreadIds && isAtStart)
                     {
                         // if the log starts with a carriage return, steal it for the thread id
                         var leadingReturn = log.StartsWith("\r") ? "\r" : "";
@@ -173,7 +174,7 @@ namespace StaffConsole
                         log = log.TrimStart('\r');
                     }
 
-                    if (ShowTimestamps)
+                    if (ShowTimestamps && isAtStart)
                     {
                         // if the log starts with a carriage return, steal it for the timestamp
                         var leadingReturn = log.StartsWith("\r") ? "\r" : "";
@@ -196,7 +197,8 @@ namespace StaffConsole
                     Console.BackgroundColor = oldBgColor;
 
                     // Check if the log ends with a return
-                    needsReturn = !log.EndsWith(Environment.NewLine);
+                    needsReturn = !log.EndsWith(Environment.NewLine) && _logQueue.Count > 1;
+                    
                 }
 
                 // Add the return if needed
