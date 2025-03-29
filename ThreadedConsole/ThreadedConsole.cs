@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿// Copyright 2025 Will Stafford. All rights reserved.
+
+using System.Collections.Concurrent;
 
 namespace StaffConsole
 {

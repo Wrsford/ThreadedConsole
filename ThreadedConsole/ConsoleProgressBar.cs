@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright 2025 Will Stafford. All rights reserved.
 
 namespace StaffConsole
 {
