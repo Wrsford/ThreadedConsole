@@ -214,18 +214,20 @@ namespace StaffConsole
                     Console.WriteLine();
                 }
             }
-            _logQueueDictLock.ReleaseReaderLock();
+            
 
             // Remove empty threads if needed
             if (keysToRemove.Count > 0)
             {
-                _logQueueDictLock.AcquireWriterLock(2000);
+                var lc = _logQueueDictLock.UpgradeToWriterLock(2000);
                 foreach (var key in keysToRemove)
                 {
                     _logQueue.Remove(key);
                 }
-                _logQueueDictLock.ReleaseWriterLock();
+                _logQueueDictLock.DowngradeFromWriterLock(ref lc);
             }
+
+            _logQueueDictLock.ReleaseReaderLock();
         }
 
         /// <summary>
@@ -243,11 +245,9 @@ namespace StaffConsole
             ConsoleState state;
             if (!_logStates.ContainsKey(threadId))
             {
-                _logStatesDictLock.ReleaseReaderLock();
-                _logStatesDictLock.AcquireWriterLock(2000);
+                var lc = _logStatesDictLock.UpgradeToWriterLock(2000);
                 _logStates.Add(threadId, new ConsoleState(ConsoleColor.Gray, ConsoleColor.Black));
-                _logStatesDictLock.ReleaseWriterLock();
-                _logStatesDictLock.AcquireReaderLock(2000);
+                _logStatesDictLock.DowngradeFromWriterLock(ref lc);
             }
             state = _logStates[threadId];
             _logStatesDictLock.ReleaseReaderLock();
@@ -298,11 +298,11 @@ namespace StaffConsole
             }
             else
             {
-                _logQueueDictLock.ReleaseReaderLock();
-                _logQueueDictLock.AcquireWriterLock(2000);
+                var lc = _logQueueDictLock.UpgradeToWriterLock(2000);
                 _logQueue[threadId] = new ConcurrentQueue<ConsoleLogEntry>();
                 logQueue = _logQueue[threadId];
-                _logQueueDictLock.ReleaseWriterLock();
+                _logQueueDictLock.DowngradeFromWriterLock(ref lc);
+                _logQueueDictLock.ReleaseReaderLock();
             }
             var state = GetState();
             var logEntry = new ConsoleLogEntry(log == null ? "" : log!.ToString(), state.ForegroundColor, state.BackgroundColor);

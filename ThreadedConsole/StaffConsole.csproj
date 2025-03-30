@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>StaffConsole.ThreadedConsole</PackageId>
@@ -14,12 +14,12 @@
     <PackageProjectUrl>https://github.com/Wrsford/ThreadedConsole</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Wrsford/ThreadedConsole</RepositoryUrl>
-    <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Command line</PackageTags>
-    <PackageReleaseNotes>Updates to better support multiple logs on a single line per thread.</PackageReleaseNotes>
+    <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Commandline</PackageTags>
+    <PackageReleaseNotes>Fix deadlock condition</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <FileVersion>1.0.1</FileVersion>
-    <Version>1.0.1</Version>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>

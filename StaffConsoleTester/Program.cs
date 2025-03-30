@@ -28,8 +28,8 @@ ThreadedConsole.ShowTimestamps = true;
 while (true)
 {
     //ThreadedConsole.WriteLine($"{Guid.NewGuid()}");
-    Thread.Sleep(500);
-    if (Random.Shared.Next(10) == 0)
+    Thread.Sleep(50);
+    if (Random.Shared.Next(2) == 0)
     {
 
         var z = Random.Shared.Next(50);
@@ -42,6 +42,7 @@ while (true)
                 int y = x;
                 Task.Run(() =>
                 {
+                    //ThreadedConsole.WriteLine($"{Guid.NewGuid()}", 1);
                     var oldColor = ThreadedConsole.ForegroundColor;
                     ThreadedConsole.ForegroundColor = myColor;
                     ThreadedConsole.Write(myProgressBar.LogProgress((float)y / 100));
