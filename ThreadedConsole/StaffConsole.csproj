@@ -15,15 +15,20 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Wrsford/ThreadedConsole</RepositoryUrl>
     <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Commandline</PackageTags>
-    <PackageReleaseNotes>Fix deadlock condition</PackageReleaseNotes>
+    <PackageReleaseNotes>Update icon</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <FileVersion>1.0.1</FileVersion>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
+    <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\logo.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
