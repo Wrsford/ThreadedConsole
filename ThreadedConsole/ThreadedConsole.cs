@@ -13,7 +13,7 @@ namespace StaffConsole
         /// <summary>
         /// Per-thread conosle state
         /// </summary>
-        private class ConsoleState
+        public class ConsoleState
         {
             public ConsoleColor ForegroundColor { get; set; }
             public ConsoleColor BackgroundColor { get; set; }
@@ -99,6 +99,9 @@ namespace StaffConsole
         /// Outputs a timestamp before each log entry
         /// </summary>
         public static bool ShowTimestamps { get; set; } = false;
+
+        public static bool DisableOutput { get; set; } = false;
+
         static ThreadedConsole()
         {
             // Start the flush loop
@@ -130,7 +133,11 @@ namespace StaffConsole
         /// </summary>
         public static void Flush()
         {
-            _logQueueDictLock.AcquireReaderLock(Timeout.Infinite);
+            if (DisableOutput)
+            {
+                return;
+            }
+            _logQueueDictLock.AcquireReaderLock(2000);
 
             // Track empty threads to remove for debounce timing accuracy
             List<int> keysToRemove = new List<int>();
@@ -212,7 +219,7 @@ namespace StaffConsole
             // Remove empty threads if needed
             if (keysToRemove.Count > 0)
             {
-                _logQueueDictLock.AcquireWriterLock(Timeout.Infinite);
+                _logQueueDictLock.AcquireWriterLock(2000);
                 foreach (var key in keysToRemove)
                 {
                     _logQueue.Remove(key);
@@ -225,18 +232,22 @@ namespace StaffConsole
         /// Gets the console state for the calling thread
         /// </summary>
         /// <returns>Console state for the calling thread</returns>
-        private static ConsoleState GetState()
+        public static ConsoleState GetState(int? forcedThreadId = null)
         {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
-            _logStatesDictLock.AcquireReaderLock(Timeout.Infinite);
+            if (DisableOutput)
+            {
+                return new ConsoleState(ConsoleColor.White, ConsoleColor.Black);
+            }
+            int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
+            _logStatesDictLock.AcquireReaderLock(2000);
             ConsoleState state;
             if (!_logStates.ContainsKey(threadId))
             {
                 _logStatesDictLock.ReleaseReaderLock();
-                _logStatesDictLock.AcquireWriterLock(Timeout.Infinite);
+                _logStatesDictLock.AcquireWriterLock(2000);
                 _logStates.Add(threadId, new ConsoleState(ConsoleColor.Gray, ConsoleColor.Black));
                 _logStatesDictLock.ReleaseWriterLock();
-                _logStatesDictLock.AcquireReaderLock(Timeout.Infinite);
+                _logStatesDictLock.AcquireReaderLock(2000);
             }
             state = _logStates[threadId];
             _logStatesDictLock.ReleaseReaderLock();
@@ -247,10 +258,14 @@ namespace StaffConsole
         /// Sets the console state for the calling thread
         /// </summary>
         /// <param name="state">Console state for the calling thread</param>
-        private static void SetState(ConsoleState state)
+        public static void SetState(ConsoleState state, int? forcedThreadId = null)
         {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
-            _logStatesDictLock.AcquireWriterLock(Timeout.Infinite);
+            if (DisableOutput)
+            {
+                return;
+            }
+            int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
+            _logStatesDictLock.AcquireWriterLock(2000);
             _logStates[threadId] = state;
             _logStatesDictLock.ReleaseWriterLock();
         }
@@ -260,16 +275,20 @@ namespace StaffConsole
         /// Writes a log entry to the console without a trailing newline
         /// </summary>
         /// <param name="log">Text to write</param>
-        public static void Write(string log) => Write((object)log);
+        public static void Write(string log, int? forcedThreadId = null) => Write((object)log, forcedThreadId);
 
         /// <summary>
         /// Writes a log entry to the console without a trailing newline
         /// </summary>
         /// <param name="log">Text to write</param>
-        public static void Write(object? log)
+        public static void Write(object? log, int? forcedThreadId = null)
         {
-            int threadId = Thread.CurrentThread.ManagedThreadId;
-            _logQueueDictLock.AcquireReaderLock(Timeout.Infinite);
+            if (DisableOutput)
+            {
+                return;
+            }
+            int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
+            _logQueueDictLock.AcquireReaderLock(2000);
             ConcurrentQueue<ConsoleLogEntry> logQueue;
 
             if (_logQueue.ContainsKey(threadId))
@@ -280,7 +299,7 @@ namespace StaffConsole
             else
             {
                 _logQueueDictLock.ReleaseReaderLock();
-                _logQueueDictLock.AcquireWriterLock(Timeout.Infinite);
+                _logQueueDictLock.AcquireWriterLock(2000);
                 _logQueue[threadId] = new ConcurrentQueue<ConsoleLogEntry>();
                 logQueue = _logQueue[threadId];
                 _logQueueDictLock.ReleaseWriterLock();
@@ -294,15 +313,15 @@ namespace StaffConsole
         /// Writes a log entry to the console with a trailing newline
         /// </summary>
         /// <param name="log">Text to write</param>
-        public static void WriteLine(string log) => WriteLine((object)log);
+        public static void WriteLine(string log, int? forcedThreadId = null) => WriteLine((object)log, forcedThreadId);
 
         /// <summary>
         /// Writes a log entry to the console with a trailing newline
         /// </summary>
         /// <param name="log">Text to write</param>
-        public static void WriteLine(object? log)
+        public static void WriteLine(object? log, int? forcedThreadId = null)
         {
-            Write((log ?? "") + Environment.NewLine);
+            Write((log ?? "") + Environment.NewLine, forcedThreadId);
         }
     }
 }
