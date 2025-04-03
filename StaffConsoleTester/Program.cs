@@ -27,12 +27,12 @@ ThreadedConsole.ShowThreadIds = true;
 ThreadedConsole.ShowTimestamps = true;
 while (true)
 {
-    //ThreadedConsole.WriteLine($"{Guid.NewGuid()}");
+    ThreadedConsole.WriteLine($"|{Guid.NewGuid()}|", 1);
     Thread.Sleep(50);
     if (Random.Shared.Next(2) == 0)
     {
 
-        var z = Random.Shared.Next(50);
+        var z = Random.Shared.Next(500) + 2;
         Task.Run(() =>
         {
             var myProgressBar = new ConsoleProgressBar($"Thread {z}");

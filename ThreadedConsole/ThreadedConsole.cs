@@ -29,26 +29,21 @@ namespace StaffConsole
         /// <summary>
         /// ThreadID -> LogQueue
         /// </summary>
-        private static readonly Dictionary<int, ConcurrentQueue<ConsoleLogEntry>> _logQueue = new Dictionary<int, ConcurrentQueue<ConsoleLogEntry>>();
-        /// <summary>
-        /// Complex lock for safe modification of the log queue
-        /// </summary>
-        private static readonly ReaderWriterLock _logQueueDictLock = new ReaderWriterLock();
+        private static readonly ConcurrentQueue<ConsoleLogEntry> _logQueue = new ConcurrentQueue<ConsoleLogEntry>();
 
         /// <summary>
         /// ThreadID -> ConsoleState
         /// </summary>
-        private static readonly Dictionary<int, ConsoleState> _logStates = new Dictionary<int, ConsoleState>();
-
-        /// <summary>
-        /// Complex lock for safe modification of the log states
-        /// </summary>
-        private static readonly ReaderWriterLock _logStatesDictLock = new ReaderWriterLock();
+        private static readonly ConcurrentDictionary<int, ConsoleState> _logStates = new ConcurrentDictionary<int, ConsoleState>();
 
         /// <summary>
         /// Minimum time between flushes. Prevents flickering and helps readability. Actual debounce time is calculated as (_debounce * (logQueue.Count - 1) * 5)
         /// </summary>
-        private static TimeSpan _debounce = TimeSpan.FromMilliseconds(20);
+        private static TimeSpan _debounce = TimeSpan.FromMilliseconds(40);
+
+        private static int _maximumLogDequeueSize = 10000;
+
+        private static bool _debugSlowMode = false;
 
         /// <summary>
         /// Last time the ThreadedConsole was flushed; used for debounce.
@@ -59,8 +54,8 @@ namespace StaffConsole
         /// <summary>
         /// The foreground color of the console for the calling thread
         /// </summary>
-        public static ConsoleColor ForegroundColor 
-        { 
+        public static ConsoleColor ForegroundColor
+        {
             get
             {
                 return GetState().ForegroundColor;
@@ -102,6 +97,8 @@ namespace StaffConsole
 
         public static bool DisableOutput { get; set; } = false;
 
+        private static int _lastOutputtedThread = -1;
+
         static ThreadedConsole()
         {
             // Start the flush loop
@@ -116,15 +113,20 @@ namespace StaffConsole
         /// </summary>
         private static void FlushLoop()
         {
+            int origDeque = _maximumLogDequeueSize;
             while (true)
             {
                 // Dynamically increase debounce time based on the number of active threads.
-                if ((DateTime.Now - _lastOutput) > _debounce * ((_logQueue.Count - 1) * 5))
+                var adjust = _logQueue.Count / (_maximumLogDequeueSize / 100.0) * _debounce;
+                
+                if ((DateTime.Now - _lastOutput) > _debounce + adjust)
                 {
+                    _maximumLogDequeueSize = _logQueue.Count;
                     Flush();
+                    _maximumLogDequeueSize = origDeque;
                     _lastOutput = DateTime.Now;
                 }
-                Thread.Sleep(_debounce);
+                Thread.Sleep(_debounce / 2);
             }
         }
 
@@ -137,19 +139,28 @@ namespace StaffConsole
             {
                 return;
             }
-            _logQueueDictLock.AcquireReaderLock(2000);
 
-            // Track empty threads to remove for debounce timing accuracy
-            List<int> keysToRemove = new List<int>();
-            foreach (var logQueuePair in _logQueue.OrderByDescending(x => x.Key))
+
+            int maximum = _maximumLogDequeueSize;
+            Dictionary<int, ConcurrentQueue<ConsoleLogEntry>> logs = new Dictionary<int, ConcurrentQueue<ConsoleLogEntry>>();
+            while (_logQueue.TryDequeue(out ConsoleLogEntry? logEntry) && maximum-- > 0)
+            {
+                if (!logs.ContainsKey(logEntry.ThreadId))
+                {
+                    logs[logEntry.ThreadId] = new ConcurrentQueue<ConsoleLogEntry>();
+                }
+                logs[logEntry.ThreadId].Enqueue(logEntry);
+            }
+
+            foreach (var logQueuePair in logs.OrderByDescending(x => x.Key))
             {
                 var logQueue = logQueuePair.Value;
                 int threadId = logQueuePair.Key;
-                
+
                 if (logQueue.Count == 0)
                 {
                     // Empties get removed later
-                    keysToRemove.Add(threadId);
+                    //keysToRemove.Add(threadId);
                     // No output needed
                     continue;
                 }
@@ -157,23 +168,29 @@ namespace StaffConsole
                 // Add a return after each thread to avoid overlapping logs (unless the log ends with a return)
                 bool needsReturn = true;
                 bool isAtStart = true;
-
                 // Thanks for this while-loop copilot
                 while (logQueue.TryDequeue(out ConsoleLogEntry logEntry))
                 {
+                    if (_debugSlowMode)
+                    {
+                        // Slow down the output for debugging purposes
+                        // This is useful for seeing the output, but slows down the program significantly
+                        // DO NOT USE IN PROD
+                        Thread.Sleep(50);
+                    }
 
                     string log = logEntry.Log;
                     isAtStart = Console.CursorLeft == 0 || log.StartsWith("\r");
                     // Restore the original colors after writing the log
                     var oldColor = Console.ForegroundColor;
                     var oldBgColor = Console.BackgroundColor;
-                    
+
                     // Thread ID
                     if (ShowThreadIds && isAtStart)
                     {
                         // if the log starts with a carriage return, steal it for the thread id
                         var leadingReturn = log.StartsWith("\r") ? "\r" : "";
-                        
+
                         // Choose a color based on the thread id
                         Console.ForegroundColor = (ConsoleColor)(threadId % 14 + 1);
                         Console.Write($"{leadingReturn}{threadId.ToString("D3")}: ");
@@ -205,7 +222,7 @@ namespace StaffConsole
 
                     // Check if the log ends with a return
                     needsReturn = !log.EndsWith(Environment.NewLine) && _logQueue.Count > 1;
-                    
+                    _lastOutputtedThread = logEntry.ThreadId;
                 }
 
                 // Add the return if needed
@@ -214,20 +231,8 @@ namespace StaffConsole
                     Console.WriteLine();
                 }
             }
-            
 
-            // Remove empty threads if needed
-            if (keysToRemove.Count > 0)
-            {
-                var lc = _logQueueDictLock.UpgradeToWriterLock(2000);
-                foreach (var key in keysToRemove)
-                {
-                    _logQueue.Remove(key);
-                }
-                _logQueueDictLock.DowngradeFromWriterLock(ref lc);
-            }
 
-            _logQueueDictLock.ReleaseReaderLock();
         }
 
         /// <summary>
@@ -241,16 +246,7 @@ namespace StaffConsole
                 return new ConsoleState(ConsoleColor.White, ConsoleColor.Black);
             }
             int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
-            _logStatesDictLock.AcquireReaderLock(2000);
-            ConsoleState state;
-            if (!_logStates.ContainsKey(threadId))
-            {
-                var lc = _logStatesDictLock.UpgradeToWriterLock(2000);
-                _logStates.Add(threadId, new ConsoleState(ConsoleColor.Gray, ConsoleColor.Black));
-                _logStatesDictLock.DowngradeFromWriterLock(ref lc);
-            }
-            state = _logStates[threadId];
-            _logStatesDictLock.ReleaseReaderLock();
+            ConsoleState state = _logStates.GetOrAdd(threadId, new ConsoleState(ConsoleColor.Gray, ConsoleColor.Black));
             return state;
         }
 
@@ -265,9 +261,7 @@ namespace StaffConsole
                 return;
             }
             int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
-            _logStatesDictLock.AcquireWriterLock(2000);
             _logStates[threadId] = state;
-            _logStatesDictLock.ReleaseWriterLock();
         }
 
 
@@ -288,24 +282,10 @@ namespace StaffConsole
                 return;
             }
             int threadId = forcedThreadId ?? Thread.CurrentThread.ManagedThreadId;
-            _logQueueDictLock.AcquireReaderLock(2000);
-            ConcurrentQueue<ConsoleLogEntry> logQueue;
+            ConcurrentQueue<ConsoleLogEntry> logQueue = _logQueue;
 
-            if (_logQueue.ContainsKey(threadId))
-            {
-                logQueue = _logQueue[threadId];
-                _logQueueDictLock.ReleaseReaderLock();
-            }
-            else
-            {
-                var lc = _logQueueDictLock.UpgradeToWriterLock(2000);
-                _logQueue[threadId] = new ConcurrentQueue<ConsoleLogEntry>();
-                logQueue = _logQueue[threadId];
-                _logQueueDictLock.DowngradeFromWriterLock(ref lc);
-                _logQueueDictLock.ReleaseReaderLock();
-            }
             var state = GetState();
-            var logEntry = new ConsoleLogEntry(log == null ? "" : log!.ToString(), state.ForegroundColor, state.BackgroundColor);
+            var logEntry = new ConsoleLogEntry(threadId, log == null ? "" : log!.ToString(), state.ForegroundColor, state.BackgroundColor);
             logQueue.Enqueue(logEntry);
         }
 
