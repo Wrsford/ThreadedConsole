@@ -15,11 +15,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Wrsford/ThreadedConsole</RepositoryUrl>
     <PackageTags>Console, Concurrent, Thread, Task, Multithreading, Commandline</PackageTags>
-    <PackageReleaseNotes>Update icon</PackageReleaseNotes>
+    <PackageReleaseNotes>Remove ReaderWriter locks that were causing issues in production IIS (reason unknown)</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <FileVersion>1.0.1</FileVersion>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <PackageIcon>logo.png</PackageIcon>
   </PropertyGroup>
 
