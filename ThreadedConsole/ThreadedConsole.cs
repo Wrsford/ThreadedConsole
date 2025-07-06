@@ -97,6 +97,11 @@ namespace StaffConsole
 
         public static bool DisableOutput { get; set; } = false;
 
+        /// <summary>
+        /// Hooks into the flush loop to allow external handling of output
+        /// </summary>
+        public static Action<ConsoleLogEntry>? OnOutput {  get; set; } = null;
+
         private static int _lastOutputtedThread = -1;
 
         static ThreadedConsole()
@@ -177,6 +182,12 @@ namespace StaffConsole
                         // This is useful for seeing the output, but slows down the program significantly
                         // DO NOT USE IN PROD
                         Thread.Sleep(50);
+                    }
+                    
+                    // Performance issues will be on them
+                    if (OnOutput != null)
+                    {
+                        OnOutput(logEntry);
                     }
 
                     string log = logEntry.Log;
